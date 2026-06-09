@@ -1,5 +1,4 @@
-import { redirect } from 'next/navigation'
-
+// Redirect géré dans next.config.ts — cette page ne sera jamais servie
 export default function Home() {
-  redirect('/artisans')
+  return null
 }
