@@ -1,10 +1,20 @@
 import { ArtisansTable } from '@/components/artisans-table'
 import { fetchDemoArtisans } from '@/lib/collecte/fetch-demo'
+import type { Artisan } from '@/lib/db/schema'
 
-export const revalidate = 3600 // re-fetch toutes les heures
+export const dynamic = 'force-dynamic'
 
 export default async function ArtisansPage() {
-  const { artisans, total } = await fetchDemoArtisans(10)
+  let artisans: Artisan[] = []
+  let total = 0
+
+  try {
+    const result = await fetchDemoArtisans(4)
+    artisans = result.artisans
+    total = result.total
+  } catch {
+    // API indisponible — affiche la grille vide
+  }
 
   return (
     <div className="flex flex-col h-screen">
@@ -17,14 +27,16 @@ export default async function ArtisansPage() {
           </div>
         </div>
         <span className="text-xs bg-white/10 px-2 py-1 rounded text-red-100">
-          Démo — {total.toLocaleString('fr')} artisans disponibles
+          Démo · {total > 0 ? `${total.toLocaleString('fr')} artisans disponibles` : 'données officielles 64 & 65'}
         </span>
       </header>
 
       <div className="px-6 py-2 bg-white border-b flex items-baseline gap-2">
         <h1 className="text-sm font-semibold text-gray-700">Artisans du bâtiment — 64 &amp; 65</h1>
         <span className="text-xs text-gray-400">
-          Données officielles · {artisans.length} artisans chargés sur {total.toLocaleString('fr')} au total
+          {artisans.length > 0
+            ? `${artisans.length} artisans chargés · données API officielle`
+            : 'Connectez Supabase pour charger la base complète'}
         </span>
       </div>
 
