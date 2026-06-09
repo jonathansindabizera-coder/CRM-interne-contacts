@@ -135,3 +135,4 @@ Données strictement à usage interne CAPEB. Beaucoup d'artisans sont en entrepr
 ## Journal (tenu par Claude Code)
 
 - 2026-06-09 : Initialisation du dépôt — CLAUDE.md ajouté, remote GitHub configuré.
+- 2026-06-09 : Étape 1 — Scaffold Next.js 15 + TypeScript + Tailwind + App Router installé.
