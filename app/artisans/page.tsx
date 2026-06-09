@@ -1,27 +1,13 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import { ArtisansTable } from '@/components/artisans-table'
-import type { Artisan } from '@/lib/db/schema'
+import { fetchDemoArtisans } from '@/lib/collecte/fetch-demo'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600 // re-fetch toutes les heures
 
 export default async function ArtisansPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data, error } = await supabase
-    .from('artisans')
-    .select('*')
-    .order('nom_entreprise', { ascending: true })
-
-  if (error) console.error('Erreur chargement artisans:', error)
-
-  const artisans: Artisan[] = data ?? []
+  const { artisans, total } = await fetchDemoArtisans(10)
 
   return (
     <div className="flex flex-col h-screen">
-      {/* Header */}
       <header className="flex items-center justify-between px-6 py-3 bg-red-700 text-white shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-7 h-7 bg-white/20 rounded" />
@@ -30,22 +16,20 @@ export default async function ArtisansPage() {
             <span className="text-red-200 text-xs ml-2">· CRM Artisans</span>
           </div>
         </div>
-        <form action="/api/auth/logout" method="POST">
-          <button className="text-xs text-red-200 hover:text-white">Déconnexion</button>
-        </form>
+        <span className="text-xs bg-white/10 px-2 py-1 rounded text-red-100">
+          Démo — {total.toLocaleString('fr')} artisans disponibles
+        </span>
       </header>
 
-      {/* Sous-titre */}
       <div className="px-6 py-2 bg-white border-b flex items-baseline gap-2">
-        <h1 className="text-sm font-semibold text-gray-700">Artisans du bâtiment — 64 & 65</h1>
-        {artisans.length === 0 && (
-          <span className="text-xs text-gray-400">Base vide — lancez la collecte pour importer les données</span>
-        )}
+        <h1 className="text-sm font-semibold text-gray-700">Artisans du bâtiment — 64 &amp; 65</h1>
+        <span className="text-xs text-gray-400">
+          Données officielles · {artisans.length} artisans chargés sur {total.toLocaleString('fr')} au total
+        </span>
       </div>
 
-      {/* Grille */}
       <div className="flex-1 overflow-hidden">
-        <ArtisansTable data={artisans} />
+        <ArtisansTable data={artisans} demoMode />
       </div>
     </div>
   )
