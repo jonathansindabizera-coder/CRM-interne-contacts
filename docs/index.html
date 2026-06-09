@@ -40,8 +40,8 @@
     <div class="text-xs px-2 py-1 rounded" style="background:rgba(255,255,255,.15)">
       <span id="hdr-total">45</span> artisans · 64 &amp; 65
     </div>
-    <div class="text-xs px-2 py-1 rounded font-medium" style="background:#f59e0b;color:#78350f">
-      ⚠ DONNÉES FICTIVES — démo interface uniquement
+    <div id="hdr-badge" class="text-xs px-2 py-1 rounded font-medium" style="background:rgba(255,255,255,.2)">
+      Chargement…
     </div>
   </div>
 </header>
@@ -50,7 +50,7 @@
 <div class="flex items-center justify-between px-6 py-2 bg-white border-b shrink-0">
   <div class="flex items-baseline gap-3">
     <h1 class="text-sm font-semibold text-gray-700">Artisans du bâtiment — 64 &amp; 65</h1>
-    <span class="text-xs text-orange-500 font-medium">⚠ Données fictives pour démonstration — les vraies données viennent de l'API officielle</span>
+    <span id="subtitle" class="text-xs text-gray-400">Connexion à l'API officielle…</span>
   </div>
   <div class="flex items-center gap-4 text-xs text-gray-500">
     <span><span id="stat-rge" class="font-semibold text-green-700">—</span> RGE certifiés</span>
@@ -151,8 +151,27 @@
 </div>
 
 <script>
-// ═══════════════════════════ DONNÉES ════════════════════════════════
-const DATA = [
+// ═══════════════════════════ MAPPING NAF → MÉTIER ════════════════════
+const NAF_METIER = {
+  '4120A':'Maçonnerie / gros œuvre','4120B':'Maçonnerie / gros œuvre','4399C':'Maçonnerie / gros œuvre',
+  '4391A':'Couverture / charpente','4391B':'Couverture / charpente',
+  '4322A':'Plomberie / chauffage','4322B':'Plomberie / chauffage',
+  '4321A':'Électricité','4321B':'Électricité',
+  '4332A':'Menuiserie','4332B':'Menuiserie','4332C':'Menuiserie',
+  '4331Z':'Plâtrerie / isolation','4329A':'Plâtrerie / isolation',
+  '4334Z':'Peinture / finition','4333Z':'Peinture / finition','4339Z':'Peinture / finition',
+  '4312A':'Terrassement / VRD','4312B':'Terrassement / VRD',
+  '4399A':'Étanchéité / métallerie','4399B':'Étanchéité / métallerie',
+  '4311Z':'Démolition / autres','4399D':'Démolition / autres','4399E':'Démolition / autres',
+};
+function getMetier(naf) {
+  if (!naf) return 'Autres travaux';
+  return NAF_METIER[naf.replace('.','').toUpperCase()] || 'Autres travaux';
+}
+
+// ═══════════════════════════ DONNÉES (chargées depuis l'API) ═════════
+// Initialement vide — rempli par loadRealData()
+const DATA_FICTIF = [
   {id:1,nom:'SARL MAÇONNERIE PYRÉNÉENNE',siret:'12345678901234',siren:'123456789',naf:'43.99C',activite:'Travaux de maçonnerie générale et gros œuvre',metier:'Maçonnerie / gros œuvre',adresse:'12 rue des Pyrénées',cp:'65000',ville:'TARBES',dept:'65',effectif:'6 à 9 salariés',rge:true,statut:'a_contacter',adherent:false,creation:'2008-03-15'},
   {id:2,nom:'ELECTRICITÉ GASCONNE',siret:'23456789012345',siren:'234567890',naf:'43.21A',activite:'Travaux d\'installation électrique dans tous locaux',metier:'Électricité',adresse:'8 avenue de la République',cp:'64000',ville:'PAU',dept:'64',effectif:'3 à 5 salariés',rge:true,statut:'a_contacter',adherent:false,creation:'2012-07-22'},
   {id:3,nom:'COUVERTURE BÉARNAISE SARL',siret:'34567890123456',siren:'345678901',naf:'43.91A',activite:'Travaux de couverture par éléments',metier:'Couverture / charpente',adresse:'3 impasse des Artisans',cp:'64100',ville:'BAYONNE',dept:'64',effectif:'10 à 19 salariés',rge:false,statut:'contacte',adherent:false,creation:'2005-11-08'},
@@ -201,7 +220,8 @@ const DATA = [
 ];
 
 // ═══════════════════════════ ÉTAT ════════════════════════════════════
-let filtered = [...DATA];
+let DATA = [];
+let filtered = [];
 let sortCol = 'nom';
 let sortDir = 'asc';
 let curPage = 0;
@@ -213,17 +233,93 @@ const STATUT = {
   prospect_perdu:'Perdu', opt_out:'Opt-out'
 };
 
+// ═══════════════════════════ CHARGEMENT API RÉELLE ═══════════════════
+async function loadRealData() {
+  document.getElementById('tbody').innerHTML = `
+    <tr><td colspan="7" class="text-center py-20">
+      <div class="inline-block w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+      <p class="text-gray-600 text-sm font-medium" id="load-msg">Connexion à l'API officielle des entreprises…</p>
+      <p class="text-gray-400 text-xs mt-1">recherche-entreprises.api.gouv.fr</p>
+    </td></tr>`;
+
+  const PAGES = 6;
+  const result = [];
+  let total = 0;
+
+  for (let page = 1; page <= PAGES; page++) {
+    try {
+      const url = `https://recherche-entreprises.api.gouv.fr/search?departement=64,65&section_activite_principale=F&etat_administratif=A&per_page=25&page=${page}`;
+      const res = await fetch(url);
+      if (!res.ok) break;
+      const json = await res.json();
+      total = json.total_results || 0;
+
+      for (const e of (json.results || [])) {
+        result.push({
+          id: result.length + 1,
+          nom:      e.nom_complet || '',
+          siret:    e.siret || '',
+          siren:    e.siren || '',
+          naf:      e.activite_principale || '',
+          activite: e.libelle_activite_principale || '',
+          metier:   getMetier(e.activite_principale),
+          adresse:  e.adresse || '',
+          cp:       e.code_postal || '',
+          ville:    (e.libelle_commune || '').toUpperCase(),
+          dept:     e.departement || '',
+          effectif: e.tranche_effectif_salarie || '',
+          rge:      !!(e.est_rge || e.complements?.est_rge),
+          statut:   'nouveau',
+          adherent: false,
+          creation: e.date_creation || '',
+        });
+      }
+
+      const el = document.getElementById('load-msg');
+      if (el) el.textContent = `Chargement… ${result.length} artisans récupérés sur ${total.toLocaleString('fr')} disponibles`;
+      await new Promise(r => setTimeout(r, 200));
+    } catch(err) {
+      console.warn('Erreur API page', page, err);
+      break;
+    }
+  }
+
+  return { artisans: result, total };
+}
+
 // ═══════════════════════════ INIT ════════════════════════════════════
-function init() {
+async function init() {
+  const { artisans, total } = await loadRealData();
+
+  if (artisans.length === 0) {
+    document.getElementById('tbody').innerHTML = `
+      <tr><td colspan="7" class="text-center py-16 text-gray-400 text-sm">
+        Impossible de contacter l'API — vérifiez votre connexion internet.
+      </td></tr>`;
+    document.getElementById('subtitle').textContent = 'Erreur de connexion à l\'API officielle';
+    return;
+  }
+
+  DATA.push(...artisans);
+
+  // Rempli le filtre métier
   const metiers = [...new Set(DATA.map(a=>a.metier))].sort();
   const sel = document.getElementById('f-metier');
   metiers.forEach(m => {
     const o = document.createElement('option');
     o.value = m; o.textContent = m; sel.appendChild(o);
   });
+
+  // Stats
   document.getElementById('stat-rge').textContent = DATA.filter(a=>a.rge).length;
   document.getElementById('stat-dept64').textContent = DATA.filter(a=>a.dept==='64').length;
   document.getElementById('stat-dept65').textContent = DATA.filter(a=>a.dept==='65').length;
+  document.getElementById('hdr-total').textContent = DATA.length;
+  document.getElementById('hdr-badge').textContent = `✓ ${total.toLocaleString('fr')} artisans dans la base`;
+  document.getElementById('hdr-badge').style.background = 'rgba(255,255,255,.2)';
+  document.getElementById('subtitle').textContent =
+    `${DATA.length} artisans chargés sur ${total.toLocaleString('fr')} disponibles · données officielles en temps réel`;
+
   applyFilters();
 }
 
