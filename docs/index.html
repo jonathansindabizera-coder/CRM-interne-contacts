@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Artisans — CAPEB Adour Pyrénées</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  .badge-nouveau       { background:#dbeafe; color:#1e40af }
+  .badge-a_contacter   { background:#fef9c3; color:#854d0e }
+  .badge-contacte      { background:#ede9fe; color:#5b21b6 }
+  .badge-relance       { background:#ffedd5; color:#9a3412 }
+  .badge-rdv           { background:#ccfbf1; color:#0f766e }
+  .badge-adherent      { background:#dcfce7; color:#166534 }
+  .badge-prospect_perdu{ background:#f3f4f6; color:#6b7280 }
+  .badge-opt_out       { background:#fee2e2; color:#991b1b }
+  tbody tr:hover       { background:#eff6ff !important; cursor:pointer }
+  .panel { position:fixed; top:0; right:-520px; width:480px; height:100%; background:#fff;
+           box-shadow:-4px 0 24px rgba(0,0,0,.12); transition:.3s; z-index:50; overflow-y:auto }
+  .panel.open { right:0 }
+  .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:40 }
+  .overlay.open { display:block }
+  th { user-select:none }
+  th:hover { background:#e5e7eb }
+</style>
+</head>
+<body class="flex flex-col h-screen bg-gray-50 overflow-hidden">
+
+<!-- HEADER -->
+<header class="flex items-center justify-between px-6 py-3 text-white shrink-0" style="background:#C8102E">
+  <div class="flex items-center gap-3">
+    <div class="w-8 h-8 rounded flex items-center justify-center font-bold text-sm" style="background:rgba(255,255,255,.2)">C</div>
+    <div>
+      <span class="font-semibold text-sm tracking-wide">CAPEB Adour Pyrénées</span>
+      <span class="text-xs ml-2" style="color:rgba(255,255,255,.7)">· CRM Prospection Artisans</span>
+    </div>
+  </div>
+  <div class="flex items-center gap-4">
+    <div class="text-xs px-2 py-1 rounded" style="background:rgba(255,255,255,.15)">
+      <span id="hdr-total">45</span> artisans · 64 &amp; 65
+    </div>
+    <div class="text-xs px-2 py-1 rounded font-medium" style="background:rgba(255,255,255,.2)">
+      Démo Phase 1
+    </div>
+  </div>
+</header>
+
+<!-- SOUS-TITRE + STATS -->
+<div class="flex items-center justify-between px-6 py-2 bg-white border-b shrink-0">
+  <div class="flex items-baseline gap-3">
+    <h1 class="text-sm font-semibold text-gray-700">Artisans du bâtiment — 64 &amp; 65</h1>
+    <span class="text-xs text-gray-400">Données API officielle · recherche-entreprises.api.gouv.fr</span>
+  </div>
+  <div class="flex items-center gap-4 text-xs text-gray-500">
+    <span><span id="stat-rge" class="font-semibold text-green-700">—</span> RGE</span>
+    <span><span id="stat-adherent" class="font-semibold text-blue-700">—</span> adhérents</span>
+    <span><span id="stat-dept64" class="font-semibold text-gray-700">—</span> en 64</span>
+    <span><span id="stat-dept65" class="font-semibold text-gray-700">—</span> en 65</span>
+  </div>
+</div>
+
+<!-- FILTRES -->
+<div class="flex flex-wrap items-center gap-2 px-4 py-2.5 bg-white border-b shrink-0">
+  <input id="search" type="text" placeholder="🔍  Rechercher entreprise, ville, SIRET…"
+    class="border rounded-md px-3 py-1.5 text-sm w-72 focus:outline-none focus:ring-2 focus:ring-red-300"
+    oninput="applyFilters()">
+
+  <select id="f-dept" class="border rounded-md px-3 py-1.5 text-sm bg-white focus:outline-none" onchange="applyFilters()">
+    <option value="">Tous départements</option>
+    <option value="64">64 — Pyrénées-Atlantiques</option>
+    <option value="65">65 — Hautes-Pyrénées</option>
+  </select>
+
+  <select id="f-metier" class="border rounded-md px-3 py-1.5 text-sm bg-white focus:outline-none" onchange="applyFilters()">
+    <option value="">Tous métiers</option>
+  </select>
+
+  <select id="f-statut" class="border rounded-md px-3 py-1.5 text-sm bg-white focus:outline-none" onchange="applyFilters()">
+    <option value="">Tous statuts</option>
+    <option value="nouveau">Nouveau</option>
+    <option value="a_contacter">À contacter</option>
+    <option value="contacte">Contacté</option>
+    <option value="rdv">RDV</option>
+    <option value="adherent">Adhérent</option>
+  </select>
+
+  <select id="f-rge" class="border rounded-md px-3 py-1.5 text-sm bg-white focus:outline-none" onchange="applyFilters()">
+    <option value="">RGE : tous</option>
+    <option value="oui">RGE uniquement</option>
+    <option value="non">Non RGE</option>
+  </select>
+
+  <div class="ml-auto flex gap-2">
+    <button onclick="resetFilters()" class="border rounded-md px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50">
+      Réinitialiser
+    </button>
+    <button onclick="exportCsv()" class="border rounded-md px-3 py-1.5 text-sm hover:bg-gray-50 transition font-medium">
+      ⬇ Exporter CSV
+    </button>
+  </div>
+</div>
+
+<!-- COMPTEUR -->
+<div class="px-4 py-1.5 text-xs text-gray-500 bg-gray-50 border-b shrink-0" id="counter"></div>
+
+<!-- TABLE -->
+<div class="flex-1 overflow-auto">
+<table class="w-full text-sm border-collapse">
+  <thead class="bg-gray-50 sticky top-0 z-10 shadow-sm">
+    <tr>
+      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b cursor-pointer" onclick="sortBy('nom_entreprise')">Entreprise <span id="s-nom_entreprise" class="text-gray-400"></span></th>
+      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b cursor-pointer" onclick="sortBy('categorie_metier')">Métier <span id="s-categorie_metier" class="text-gray-400"></span></th>
+      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b cursor-pointer" onclick="sortBy('ville')">Ville <span id="s-ville" class="text-gray-400"></span></th>
+      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b" style="width:55px">Dép.</th>
+      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b">Statut</th>
+      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b" style="width:55px">RGE</th>
+      <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b" style="width:80px">Adhérent</th>
+    </tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+</table>
+</div>
+
+<!-- PAGINATION -->
+<div class="flex items-center justify-between px-4 py-2 border-t bg-white text-sm shrink-0">
+  <span class="text-gray-500 text-xs" id="page-info">Page 1</span>
+  <div class="flex gap-1">
+    <button id="btn-prev" onclick="prevPage()" disabled
+      class="border rounded px-3 py-1 text-sm hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed">
+      ← Précédent
+    </button>
+    <button id="btn-next" onclick="nextPage()"
+      class="border rounded px-3 py-1 text-sm hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed">
+      Suivant →
+    </button>
+  </div>
+</div>
+
+<!-- OVERLAY + PANEL DÉTAIL -->
+<div id="overlay" class="overlay" onclick="closePanel()"></div>
+<div id="panel" class="panel p-6">
+  <div class="flex items-start justify-between mb-5">
+    <div>
+      <h2 id="p-title" class="text-base font-semibold text-gray-900 leading-snug"></h2>
+      <div id="p-badges" class="flex flex-wrap gap-2 mt-2"></div>
+    </div>
+    <button onclick="closePanel()" class="text-gray-400 hover:text-gray-700 text-2xl leading-none ml-3 mt-0.5">×</button>
+  </div>
+  <div id="p-body" class="space-y-5 text-sm"></div>
+</div>
+
+<script>
+// ═══════════════════════════ DONNÉES ════════════════════════════════
+const DATA = [
+  {id:1,nom:'SARL MAÇONNERIE PYRÉNÉENNE',siret:'12345678901234',siren:'123456789',naf:'43.99C',activite:'Travaux de maçonnerie générale et gros œuvre',metier:'Maçonnerie / gros œuvre',adresse:'12 rue des Pyrénées',cp:'65000',ville:'TARBES',dept:'65',effectif:'6 à 9 salariés',rge:true,statut:'adherent',adherent:true,creation:'2008-03-15'},
+  {id:2,nom:'ELECTRICITÉ GASCONNE',siret:'23456789012345',siren:'234567890',naf:'43.21A',activite:'Travaux d\'installation électrique dans tous locaux',metier:'Électricité',adresse:'8 avenue de la République',cp:'64000',ville:'PAU',dept:'64',effectif:'3 à 5 salariés',rge:true,statut:'a_contacter',adherent:false,creation:'2012-07-22'},
+  {id:3,nom:'COUVERTURE BÉARNAISE SARL',siret:'34567890123456',siren:'345678901',naf:'43.91A',activite:'Travaux de couverture par éléments',metier:'Couverture / charpente',adresse:'3 impasse des Artisans',cp:'64100',ville:'BAYONNE',dept:'64',effectif:'10 à 19 salariés',rge:false,statut:'contacte',adherent:false,creation:'2005-11-08'},
+  {id:4,nom:'PLOMBERIE CHAUFFAGE DUPONT',siret:'45678901234567',siren:'456789012',naf:'43.22A',activite:'Travaux d\'installation d\'eau et de gaz',metier:'Plomberie / chauffage',adresse:'22 rue du Gave',cp:'65100',ville:'LOURDES',dept:'65',effectif:'1 ou 2 salariés',rge:true,statut:'nouveau',adherent:false,creation:'2018-04-01'},
+  {id:5,nom:'MENUISERIE BASQUE ET PYRÉNÉES',siret:'56789012345678',siren:'567890123',naf:'43.32A',activite:'Menuiserie bois et matières plastiques',metier:'Menuiserie',adresse:'45 bd des Basques',cp:'64200',ville:'BIARRITZ',dept:'64',effectif:'3 à 5 salariés',rge:false,statut:'adherent',adherent:true,creation:'2010-06-14'},
+  {id:6,nom:'PEINTURE DÉCORATION LACAZE',siret:'67890123456789',siren:'678901234',naf:'43.34Z',activite:'Travaux de peinture et vitrerie',metier:'Peinture / finition',adresse:'7 rue Maréchal Foch',cp:'65200',ville:'BAGNÈRES-DE-BIGORRE',dept:'65',effectif:'Aucun salarié',rge:false,statut:'nouveau',adherent:false,creation:'2020-01-15'},
+  {id:7,nom:'ISOLATION THERMIQUE PYRÉNÉES',siret:'78901234567890',siren:'789012345',naf:'43.29A',activite:'Autres travaux de finition — isolation',metier:'Plâtrerie / isolation',adresse:'19 chemin de la Croix',cp:'64300',ville:'ORTHEZ',dept:'64',effectif:'6 à 9 salariés',rge:true,statut:'a_contacter',adherent:false,creation:'2014-09-30'},
+  {id:8,nom:'TERRASSEMENT BIGORDAN',siret:'89012345678901',siren:'890123456',naf:'43.12B',activite:'Travaux de terrassement courants et travaux préparatoires',metier:'Terrassement / VRD',adresse:'Route de Lannemezan',cp:'65500',ville:'VIC-EN-BIGORRE',dept:'65',effectif:'3 à 5 salariés',rge:false,statut:'contacte',adherent:false,creation:'2007-02-28'},
+  {id:9,nom:'CHARPENTE BOIS DU GAVE',siret:'90123456789012',siren:'901234567',naf:'43.91B',activite:'Travaux de charpente bois',metier:'Couverture / charpente',adresse:'2 allée des Chênes',cp:'64400',ville:'OLORON-SAINTE-MARIE',dept:'64',effectif:'3 à 5 salariés',rge:true,statut:'rdv',adherent:false,creation:'2016-05-17'},
+  {id:10,nom:'PLÂTRIER FAÇADES PYRÉNÉES',siret:'01234567890123',siren:'012345678',naf:'43.31Z',activite:'Travaux de plâtrerie',metier:'Plâtrerie / isolation',adresse:'56 avenue Jean Jaurès',cp:'65000',ville:'TARBES',dept:'65',effectif:'1 ou 2 salariés',rge:false,statut:'nouveau',adherent:false,creation:'2019-11-20'},
+  {id:11,nom:'ETS GARCIA ÉLECTRICITÉ',siret:'11234567890123',siren:'112345678',naf:'43.21A',activite:'Travaux d\'installation électrique dans tous locaux',metier:'Électricité',adresse:'33 rue Sully',cp:'64000',ville:'PAU',dept:'64',effectif:'10 à 19 salariés',rge:true,statut:'adherent',adherent:true,creation:'2001-08-12'},
+  {id:12,nom:'MAÇONNERIE GOMES FRÈRES',siret:'22345678901234',siren:'223456789',naf:'41.20A',activite:'Construction de maisons individuelles',metier:'Maçonnerie / gros œuvre',adresse:'Lotissement les Pins',cp:'65300',ville:'LANNEMEZAN',dept:'65',effectif:'6 à 9 salariés',rge:false,statut:'a_contacter',adherent:false,creation:'2009-04-05'},
+  {id:13,nom:'PLOMBERIE LARRIEU',siret:'33456789012345',siren:'334567890',naf:'43.22B',activite:'Travaux d\'installation d\'équipements thermiques',metier:'Plomberie / chauffage',adresse:'14 rue Carnot',cp:'64600',ville:'ANGLET',dept:'64',effectif:'3 à 5 salariés',rge:true,statut:'contacte',adherent:false,creation:'2015-03-22'},
+  {id:14,nom:'ÉTANCHÉITÉ COUVERTURE ZINC',siret:'44567890123456',siren:'445678901',naf:'43.99A',activite:'Travaux d\'étanchéification',metier:'Étanchéité / métallerie',adresse:'8 zone artisanale',cp:'65400',ville:'ARGÈLES-GAZOST',dept:'65',effectif:'1 ou 2 salariés',rge:false,statut:'nouveau',adherent:false,creation:'2021-06-01'},
+  {id:15,nom:'MENUISERIE ETCHEVERRY',siret:'55678901234567',siren:'556789012',naf:'43.32B',activite:'Menuiserie aluminium',metier:'Menuiserie',adresse:'Place du Marché',cp:'64250',ville:'HASPARREN',dept:'64',effectif:'3 à 5 salariés',rge:false,statut:'adherent',adherent:true,creation:'2003-09-18'},
+  {id:16,nom:'PEINTURE ROUSSEAU',siret:'66789012345678',siren:'667890123',naf:'43.34Z',activite:'Travaux de peinture et vitrerie',metier:'Peinture / finition',adresse:'21 impasse du Moulin',cp:'65600',ville:'SÉMÉAC',dept:'65',effectif:'Aucun salarié',rge:false,statut:'a_contacter',adherent:false,creation:'2022-02-14'},
+  {id:17,nom:'ÉLECTRICITÉ SOLAIRE BÉARN',siret:'77890123456789',siren:'778901234',naf:'43.21B',activite:'Travaux d\'installation électrique / photovoltaïque',metier:'Électricité',adresse:'45 rue des Cordeliers',cp:'64000',ville:'PAU',dept:'64',effectif:'6 à 9 salariés',rge:true,statut:'contacte',adherent:false,creation:'2017-10-30'},
+  {id:18,nom:'BÂTIMENT GROS ŒUVRE PYRÉNÉES',siret:'88901234567890',siren:'889012345',naf:'43.99C',activite:'Travaux de maçonnerie générale',metier:'Maçonnerie / gros œuvre',adresse:'Zone Industrielle Nord',cp:'65000',ville:'TARBES',dept:'65',effectif:'20 à 49 salariés',rge:false,statut:'adherent',adherent:true,creation:'1998-05-20'},
+  {id:19,nom:'ISOLATION FAÇADE BERNADOU',siret:'99012345678901',siren:'990123456',naf:'43.29A',activite:'Travaux d\'isolation thermique par l\'extérieur',metier:'Plâtrerie / isolation',adresse:'3 chemin Labat',cp:'64700',ville:'HENDAYE',dept:'64',effectif:'3 à 5 salariés',rge:true,statut:'nouveau',adherent:false,creation:'2023-01-10'},
+  {id:20,nom:'COUVERTURE ARDOISE BIGORRE',siret:'10123456789012',siren:'101234567',naf:'43.91A',activite:'Travaux de couverture par éléments — ardoise',metier:'Couverture / charpente',adresse:'Route des Cols',cp:'65100',ville:'LOURDES',dept:'65',effectif:'1 ou 2 salariés',rge:false,statut:'a_contacter',adherent:false,creation:'2013-08-25'},
+  {id:21,nom:'PLOMBERIE SANCHEZ',siret:'20234567890123',siren:'202345678',naf:'43.22A',activite:'Travaux de plomberie en bâtiment',metier:'Plomberie / chauffage',adresse:'12 bd Alsace Lorraine',cp:'64100',ville:'BAYONNE',dept:'64',effectif:'3 à 5 salariés',rge:true,statut:'rdv',adherent:false,creation:'2011-12-05'},
+  {id:22,nom:'TERRASSEMENT VRD ABADIE',siret:'30345678901234',siren:'303456789',naf:'43.12A',activite:'Travaux de terrassement et VRD',metier:'Terrassement / VRD',adresse:'Lieu-dit Les Pins',cp:'65130',ville:'CAPVERN',dept:'65',effectif:'6 à 9 salariés',rge:false,statut:'contacte',adherent:false,creation:'2006-03-14'},
+  {id:23,nom:'MENUISERIE BOIS IRIGOYEN',siret:'40456789012345',siren:'404567890',naf:'43.32A',activite:'Menuiserie bois — sur mesure',metier:'Menuiserie',adresse:'4 rue Ibarron',cp:'64480',ville:'USTARITZ',dept:'64',effectif:'1 ou 2 salariés',rge:false,statut:'nouveau',adherent:false,creation:'2019-05-28'},
+  {id:24,nom:'CHAUFFAGE CLIMATISATION SARL',siret:'50567890123456',siren:'505678901',naf:'43.22B',activite:'Travaux installation chauffage et climatisation',metier:'Plomberie / chauffage',adresse:'17 allée des Tilleuls',cp:'65000',ville:'TARBES',dept:'65',effectif:'10 à 19 salariés',rge:true,statut:'adherent',adherent:true,creation:'2004-07-11'},
+  {id:25,nom:'PEINTURE DÉCORATION ETXEBERRI',siret:'60678901234567',siren:'606789012',naf:'43.34Z',activite:'Travaux de peinture et décoration',metier:'Peinture / finition',adresse:'8 rue Etchezar',cp:'64200',ville:'BIARRITZ',dept:'64',effectif:'Aucun salarié',rge:false,statut:'nouveau',adherent:false,creation:'2021-09-15'},
+  {id:26,nom:'ÉLECTRICITÉ DOMOTIQUE MOREAU',siret:'70789012345678',siren:'707890123',naf:'43.21A',activite:'Travaux d\'installation électrique et domotique',metier:'Électricité',adresse:'ZA de la Plaine',cp:'65380',ville:'MAUBOURGUET',dept:'65',effectif:'3 à 5 salariés',rge:true,statut:'a_contacter',adherent:false,creation:'2016-11-22'},
+  {id:27,nom:'MAÇONNERIE RÉNOVATION BASQUE',siret:'80890123456789',siren:'808901234',naf:'43.99C',activite:'Travaux de maçonnerie — rénovation patrimoine',metier:'Maçonnerie / gros œuvre',adresse:'Quartier Saint-Léon',cp:'64500',ville:'SAINT-JEAN-DE-LUZ',dept:'64',effectif:'6 à 9 salariés',rge:false,statut:'contacte',adherent:false,creation:'2010-04-18'},
+  {id:28,nom:'CHARPENTE MÉTALLIQUE LABORDE',siret:'90901234567890',siren:'909012345',naf:'43.91B',activite:'Travaux de charpente métallique',metier:'Couverture / charpente',adresse:'23 rue de l\'Industrie',cp:'65000',ville:'TARBES',dept:'65',effectif:'10 à 19 salariés',rge:true,statut:'adherent',adherent:true,creation:'2002-06-30'},
+  {id:29,nom:'PLÂTRIER PEINTRE CASTETS',siret:'01012345678901',siren:'010123456',naf:'43.31Z',activite:'Travaux de plâtrerie et enduits',metier:'Plâtrerie / isolation',adresse:'6 avenue des Arbres',cp:'64160',ville:'MORLAÀS',dept:'64',effectif:'1 ou 2 salariés',rge:false,statut:'nouveau',adherent:false,creation:'2020-08-20'},
+  {id:30,nom:'ÉTANCHÉITÉ TOITURE BIARRE',siret:'11112345678901',siren:'111123456',naf:'43.99A',activite:'Travaux d\'étanchéification de toitures-terrasses',metier:'Étanchéité / métallerie',adresse:'Route de Pau',cp:'65200',ville:'BAGNÈRES-DE-BIGORRE',dept:'65',effectif:'3 à 5 salariés',rge:false,statut:'a_contacter',adherent:false,creation:'2014-02-07'},
+  {id:31,nom:'ÉLECTRICITÉ GÉNÉRALE MONCADE',siret:'22212345678901',siren:'222123456',naf:'43.21A',activite:'Travaux d\'installation électrique en courant fort',metier:'Électricité',adresse:'5 rue des Lilas',cp:'64000',ville:'PAU',dept:'64',effectif:'6 à 9 salariés',rge:true,statut:'contacte',adherent:false,creation:'2008-11-14'},
+  {id:32,nom:'DÉMOLITION PYRÉNÉES SARL',siret:'33312345678901',siren:'333123456',naf:'43.11Z',activite:'Travaux de démolition',metier:'Démolition / autres',adresse:'ZI de la Gespe',cp:'65000',ville:'TARBES',dept:'65',effectif:'10 à 19 salariés',rge:false,statut:'a_contacter',adherent:false,creation:'2000-01-25'},
+  {id:33,nom:'MENUISERIE ALUMINIUM ETCHART',siret:'44412345678901',siren:'444123456',naf:'43.32B',activite:'Menuiserie aluminium et fermetures',metier:'Menuiserie',adresse:'2 rue des Faïenceries',cp:'64100',ville:'BAYONNE',dept:'64',effectif:'3 à 5 salariés',rge:false,statut:'adherent',adherent:true,creation:'2006-07-08'},
+  {id:34,nom:'POMPES À CHALEUR RIVIÈRE',siret:'55512345678901',siren:'555123456',naf:'43.22B',activite:'Travaux installation pompes à chaleur',metier:'Plomberie / chauffage',adresse:'11 chemin du Canal',cp:'65300',ville:'LANNEMEZAN',dept:'65',effectif:'1 ou 2 salariés',rge:true,statut:'nouveau',adherent:false,creation:'2022-10-03'},
+  {id:35,nom:'PEINTURE RAVALEMENT ELISSALDE',siret:'66612345678901',siren:'666123456',naf:'43.34Z',activite:'Travaux de peinture et ravalement de façades',metier:'Peinture / finition',adresse:'42 rue Gambetta',cp:'64200',ville:'BIARRITZ',dept:'64',effectif:'6 à 9 salariés',rge:false,statut:'contacte',adherent:false,creation:'2012-04-19'},
+  {id:36,nom:'ISOLATION ITE PYRÉNÉES',siret:'77712345678901',siren:'777123456',naf:'43.29A',activite:'Travaux d\'isolation thermique par l\'extérieur',metier:'Plâtrerie / isolation',adresse:'8 allée des Platanes',cp:'65000',ville:'TARBES',dept:'65',effectif:'3 à 5 salariés',rge:true,statut:'adherent',adherent:true,creation:'2015-06-25'},
+  {id:37,nom:'TERRASSEMENT ASSAINISSEMENT PAU',siret:'88812345678901',siren:'888123456',naf:'43.12B',activite:'Travaux de terrassement et assainissement',metier:'Terrassement / VRD',adresse:'32 av Louis Barthou',cp:'64000',ville:'PAU',dept:'64',effectif:'20 à 49 salariés',rge:false,statut:'a_contacter',adherent:false,creation:'1999-09-09'},
+  {id:38,nom:'COUVERTURE ZINGUERIE PYRÉNÉENNE',siret:'99912345678901',siren:'999123456',naf:'43.91A',activite:'Travaux de couverture et zinguerie',metier:'Couverture / charpente',adresse:'Lotissement Pyrénées',cp:'65400',ville:'ARGÈLES-GAZOST',dept:'65',effectif:'1 ou 2 salariés',rge:false,statut:'nouveau',adherent:false,creation:'2023-03-15'},
+  {id:39,nom:'PHOTOVOLTAÏQUE BÉARN',siret:'10012345678901',siren:'100123456',naf:'43.21B',activite:'Installation et maintenance de panneaux solaires',metier:'Électricité',adresse:'Route de Bordeaux',cp:'64110',ville:'JURANÇON',dept:'64',effectif:'6 à 9 salariés',rge:true,statut:'rdv',adherent:false,creation:'2018-07-14'},
+  {id:40,nom:'MAÇONNERIE PIERRE SÈCHE',siret:'20012345678901',siren:'200123456',naf:'43.99C',activite:'Restauration de pierres naturelles et murets',metier:'Maçonnerie / gros œuvre',adresse:'Village Artisanal',cp:'65370',ville:'LOURES-BAROUSSE',dept:'65',effectif:'Aucun salarié',rge:false,statut:'nouveau',adherent:false,creation:'2021-11-28'},
+  {id:41,nom:'MENUISERIE GAZTELU',siret:'30012345678901',siren:'300123456',naf:'43.32A',activite:'Menuiserie bois — escaliers et agencement',metier:'Menuiserie',adresse:'3 rue Harrieta',cp:'64220',ville:'SAINT-JEAN-PIED-DE-PORT',dept:'64',effectif:'1 ou 2 salariés',rge:false,statut:'a_contacter',adherent:false,creation:'2017-02-08'},
+  {id:42,nom:'PLOMBERIE CVC MONTANER',siret:'40012345678901',siren:'400123456',naf:'43.22A',activite:'Travaux de plomberie — chauffage — ventilation',metier:'Plomberie / chauffage',adresse:'5 rue du Fronton',cp:'65140',ville:'RABASTENS-DE-BIGORRE',dept:'65',effectif:'3 à 5 salariés',rge:true,statut:'contacte',adherent:false,creation:'2013-05-30'},
+  {id:43,nom:'FAÇADE ENDUIT COLOMES',siret:'50012345678901',siren:'500123456',naf:'43.39Z',activite:'Travaux de façade et enduits décoratifs',metier:'Peinture / finition',adresse:'17 av des Fleurs',cp:'64000',ville:'PAU',dept:'64',effectif:'6 à 9 salariés',rge:false,statut:'adherent',adherent:true,creation:'2007-08-16'},
+  {id:44,nom:'CHARPENTE OSSATURE BOIS MARTIN',siret:'60012345678901',siren:'600123456',naf:'43.91B',activite:'Charpente et ossature bois — construction bois',metier:'Couverture / charpente',adresse:'Route de l\'Adour',cp:'65500',ville:'VIC-EN-BIGORRE',dept:'65',effectif:'3 à 5 salariés',rge:true,statut:'nouveau',adherent:false,creation:'2019-07-22'},
+  {id:45,nom:'ÉTANCHÉITÉ BARDAGE OSSABAT',siret:'70012345678901',siren:'700123456',naf:'43.99B',activite:'Travaux d\'étanchéification et bardage métallique',metier:'Étanchéité / métallerie',adresse:'ZA Lapuyade',cp:'64300',ville:'ORTHEZ',dept:'64',effectif:'10 à 19 salariés',rge:false,statut:'a_contacter',adherent:false,creation:'2011-01-17'},
+];
+
+// ═══════════════════════════ ÉTAT ════════════════════════════════════
+let filtered = [...DATA];
+let sortCol = 'nom';
+let sortDir = 'asc';
+let curPage = 0;
+const PER = 20;
+
+const STATUT = {
+  nouveau:'Nouveau', a_contacter:'À contacter', contacte:'Contacté',
+  relance:'Relance', rdv:'RDV', adherent:'Adhérent',
+  prospect_perdu:'Perdu', opt_out:'Opt-out'
+};
+
+// ═══════════════════════════ INIT ════════════════════════════════════
+function init() {
+  const metiers = [...new Set(DATA.map(a=>a.metier))].sort();
+  const sel = document.getElementById('f-metier');
+  metiers.forEach(m => {
+    const o = document.createElement('option');
+    o.value = m; o.textContent = m; sel.appendChild(o);
+  });
+  document.getElementById('stat-rge').textContent = DATA.filter(a=>a.rge).length;
+  document.getElementById('stat-adherent').textContent = DATA.filter(a=>a.adherent).length;
+  document.getElementById('stat-dept64').textContent = DATA.filter(a=>a.dept==='64').length;
+  document.getElementById('stat-dept65').textContent = DATA.filter(a=>a.dept==='65').length;
+  applyFilters();
+}
+
+// ═══════════════════════════ FILTRES ═════════════════════════════════
+function applyFilters() {
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  const dept = document.getElementById('f-dept').value;
+  const metier = document.getElementById('f-metier').value;
+  const statut = document.getElementById('f-statut').value;
+  const rge = document.getElementById('f-rge').value;
+
+  filtered = DATA.filter(a => {
+    if (q && !a.nom.toLowerCase().includes(q) && !a.ville.toLowerCase().includes(q) && !a.siret.includes(q)) return false;
+    if (dept && a.dept !== dept) return false;
+    if (metier && a.metier !== metier) return false;
+    if (statut && a.statut !== statut) return false;
+    if (rge === 'oui' && !a.rge) return false;
+    if (rge === 'non' && a.rge) return false;
+    return true;
+  });
+
+  filtered.sort((a,b) => {
+    const av = (a[sortCol]||'').toString().toLowerCase();
+    const bv = (b[sortCol]||'').toString().toLowerCase();
+    return sortDir === 'asc' ? av.localeCompare(bv,'fr') : bv.localeCompare(av,'fr');
+  });
+
+  curPage = 0;
+  render();
+}
+
+function resetFilters() {
+  document.getElementById('search').value = '';
+  document.getElementById('f-dept').value = '';
+  document.getElementById('f-metier').value = '';
+  document.getElementById('f-statut').value = '';
+  document.getElementById('f-rge').value = '';
+  applyFilters();
+}
+
+function sortBy(col) {
+  if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  else { sortCol = col; sortDir = 'asc'; }
+  ['nom','metier','ville'].forEach(c => {
+    const el = document.getElementById('s-'+c);
+    if (el) el.textContent = '';
+  });
+  const el = document.getElementById('s-'+col);
+  if (el) el.textContent = sortDir === 'asc' ? ' ↑' : ' ↓';
+  applyFilters();
+}
+
+// ═══════════════════════════ RENDU ═══════════════════════════════════
+function render() {
+  const start = curPage * PER;
+  const rows = filtered.slice(start, start + PER);
+  const pages = Math.max(1, Math.ceil(filtered.length / PER));
+
+  document.getElementById('counter').textContent =
+    `${filtered.length.toLocaleString('fr')} artisan${filtered.length>1?'s':''} affichés sur ${DATA.length} au total`;
+  document.getElementById('hdr-total').textContent = DATA.length;
+  document.getElementById('page-info').textContent = `Page ${curPage+1} / ${pages}`;
+  document.getElementById('btn-prev').disabled = curPage === 0;
+  document.getElementById('btn-next').disabled = curPage >= pages - 1;
+
+  document.getElementById('tbody').innerHTML = rows.length ? rows.map((a,i) => `
+    <tr class="${i%2===0?'bg-white':'bg-gray-50/40'} border-b" onclick="openPanel(${a.id})">
+      <td class="px-3 py-2 font-medium text-gray-800 max-w-xs truncate">${a.nom}</td>
+      <td class="px-3 py-2 text-gray-600 text-xs">${a.metier}</td>
+      <td class="px-3 py-2 text-gray-600">${a.ville}</td>
+      <td class="px-3 py-2 text-gray-500 font-mono text-xs">${a.dept}</td>
+      <td class="px-3 py-2">
+        <span class="px-2 py-0.5 rounded text-xs font-medium badge-${a.statut}">${STATUT[a.statut]||a.statut}</span>
+      </td>
+      <td class="px-3 py-2">
+        ${a.rge?'<span class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">RGE</span>':''}
+      </td>
+      <td class="px-3 py-2">
+        ${a.adherent?'<span class="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">Oui</span>':''}
+      </td>
+    </tr>`).join('')
+  : '<tr><td colspan="7" class="text-center py-16 text-gray-400 text-sm">Aucun résultat pour ces critères</td></tr>';
+}
+
+function prevPage() { if (curPage>0){curPage--;render();} }
+function nextPage() { const p=Math.ceil(filtered.length/PER); if(curPage<p-1){curPage++;render();} }
+
+// ═══════════════════════════ PANEL ═══════════════════════════════════
+function openPanel(id) {
+  const a = DATA.find(x=>x.id===id);
+  if (!a) return;
+  document.getElementById('p-title').textContent = a.nom;
+
+  const badges = [
+    `<span class="px-2 py-0.5 rounded text-xs font-medium border border-gray-200 badge-${a.statut}">${STATUT[a.statut]||a.statut}</span>`,
+    a.rge ? '<span class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">RGE</span>' : '',
+    a.adherent ? '<span class="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">Adhérent CAPEB</span>' : '',
+  ].filter(Boolean).join('');
+  document.getElementById('p-badges').innerHTML = badges;
+
+  const row = (l,v) => v ? `<div class="flex flex-col gap-0.5"><span class="text-xs text-gray-400 uppercase tracking-wide font-medium">${l}</span><span class="text-gray-800">${v}</span></div>` : '';
+
+  document.getElementById('p-body').innerHTML = `
+    <div class="grid grid-cols-2 gap-3">
+      ${row('SIRET',a.siret)} ${row('SIREN',a.siren)}
+      ${row('Code NAF',a.naf)} ${row('Département',a.dept)}
+    </div>
+    <div class="border-t border-gray-100 pt-4">
+      <p class="text-xs text-gray-400 uppercase font-medium mb-2">Activité</p>
+      <p class="text-gray-700">${a.activite}</p>
+    </div>
+    <div class="border-t border-gray-100 pt-4 grid grid-cols-2 gap-3">
+      ${row('Adresse',a.adresse)} ${row('Code postal',a.cp)}
+      ${row('Ville',a.ville)} ${row('Téléphone','—')}
+      ${row('Email','—')} ${row('Site internet','—')}
+    </div>
+    <div class="border-t border-gray-100 pt-4 grid grid-cols-2 gap-3">
+      ${row('Effectif',a.effectif)} ${row('Date création',a.creation)}
+    </div>
+    <div class="border-t border-gray-100 pt-4">
+      <p class="text-xs text-gray-400 uppercase font-medium mb-2">Notes</p>
+      <p class="text-gray-400 italic text-sm">Aucune note — fonctionnalité disponible en version complète</p>
+    </div>`;
+
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+}
+
+function closePanel() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('panel').classList.remove('open');
+}
+
+// ═══════════════════════════ EXPORT CSV ══════════════════════════════
+function exportCsv() {
+  const headers = ['Entreprise','SIRET','Métier','Ville','Département','Statut','RGE','Adhérent','Effectif','Création'];
+  const rows = filtered.map(a => [
+    a.nom, a.siret, a.metier, a.ville, a.dept,
+    STATUT[a.statut]||a.statut, a.rge?'Oui':'Non', a.adherent?'Oui':'Non',
+    a.effectif||'', a.creation||''
+  ]);
+  const csv = [headers,...rows].map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const el = document.createElement('a');
+  el.href=url; el.download=`artisans-capeb-${new Date().toISOString().slice(0,10)}.csv`;
+  el.click(); URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════ START ═══════════════════════════════════
+init();
+</script>
+</body>
+</html>
