@@ -136,3 +136,4 @@ Données strictement à usage interne CAPEB. Beaucoup d'artisans sont en entrepr
 
 - 2026-06-09 : Initialisation du dépôt — CLAUDE.md ajouté, remote GitHub configuré.
 - 2026-06-09 : Étape 1 — Scaffold Next.js 15 + TypeScript + Tailwind + App Router installé.
+- 2026-06-15 : Audit technique immédiat — routage racine corrigé via `redirect('/artisans')`, rapports `TECHNICAL_AUDIT.md`, `PRODUCT_ROADMAP.md` et `IMPROVEMENTS.md` ajoutés.
