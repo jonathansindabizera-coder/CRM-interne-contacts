@@ -51,7 +51,13 @@ function exportCsv(data: Artisan[]) {
   a.click(); URL.revokeObjectURL(url)
 }
 
-export function ArtisansTable({ data }: { data: Artisan[] }) {
+export function ArtisansTable({
+  data,
+  showCollectAction = true,
+}: {
+  data: Artisan[]
+  showCollectAction?: boolean
+}) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [globalFilter, setGlobalFilter] = useState('')
@@ -166,9 +172,11 @@ export function ArtisansTable({ data }: { data: Artisan[] }) {
           >
             Exporter CSV
           </Button>
-          <Button size="sm" className="bg-red-600 hover:bg-red-700" onClick={lancerCollecte} disabled={collecteLoading}>
-            {collecteLoading ? 'Collecte en cours…' : 'Collecter artisans 65'}
-          </Button>
+          {showCollectAction && (
+            <Button size="sm" className="bg-red-600 hover:bg-red-700" onClick={lancerCollecte} disabled={collecteLoading}>
+              {collecteLoading ? 'Collecte en cours…' : 'Collecter artisans 65'}
+            </Button>
+          )}
         </div>
       </div>
 

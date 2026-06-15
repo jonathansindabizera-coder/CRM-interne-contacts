@@ -1,5 +1,6 @@
 import { ArtisansTable } from '@/components/artisans-table'
 import { MembersUploadPanel } from '@/components/members-upload-panel'
+import { ProspectDiscoveryPanel } from '@/components/prospect-discovery-panel'
 import type { Artisan } from '@/lib/db/schema'
 
 export const dynamic = 'force-dynamic'
@@ -66,8 +67,16 @@ export default async function ArtisansPage() {
 
           <MembersUploadPanel />
 
+          <ProspectDiscoveryPanel />
+
           <div className="overflow-hidden rounded-xl border bg-white">
-            <ArtisansTable data={artisans} />
+            <div className="border-b px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Base CRM enregistrée</p>
+              <p className="text-sm text-gray-600">
+                Cette zone recevra les prospects validés après comparaison avec la liste adhérents.
+              </p>
+            </div>
+            <ArtisansTable data={artisans} showCollectAction={false} />
           </div>
         </div>
       </div>
