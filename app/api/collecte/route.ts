@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { fetchAllArtisans } from '@/lib/collecte/fetch-artisans'
+import { TARGET_DEPARTMENT, TARGET_DEPARTMENT_LABEL } from '@/lib/collecte/prospect-targeting'
 
 export async function POST() {
   const supabase = await createClient()
@@ -19,7 +20,15 @@ export async function POST() {
 
     if (error) throw error
 
-    return NextResponse.json({ success: true, count: artisans.length })
+    return NextResponse.json({
+      success: true,
+      count: artisans.length,
+      target: {
+        departement: TARGET_DEPARTMENT,
+        label: TARGET_DEPARTMENT_LABEL,
+        profile: 'Artisans du bâtiment, entreprises de moins de 20 salariés quand l’effectif est connu',
+      },
+    })
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 })
   }

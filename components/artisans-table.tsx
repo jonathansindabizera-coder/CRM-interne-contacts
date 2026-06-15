@@ -51,7 +51,7 @@ function exportCsv(data: Artisan[]) {
   a.click(); URL.revokeObjectURL(url)
 }
 
-export function ArtisansTable({ data, demoMode = false }: { data: Artisan[]; demoMode?: boolean }) {
+export function ArtisansTable({ data }: { data: Artisan[] }) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [globalFilter, setGlobalFilter] = useState('')
@@ -78,8 +78,10 @@ export function ArtisansTable({ data, demoMode = false }: { data: Artisan[]; dem
     { accessorKey: 'nom_entreprise', header: 'Entreprise', cell: i => <span className="font-medium">{i.getValue() as string}</span> },
     { accessorKey: 'categorie_metier', header: 'Métier' },
     { accessorKey: 'ville', header: 'Ville' },
-    { accessorKey: 'departement', header: 'Dép.', size: 60 },
     { accessorKey: 'telephone', header: 'Téléphone' },
+    { accessorKey: 'email', header: 'Email' },
+    { accessorKey: 'site_internet', header: 'Site web' },
+    { accessorKey: 'nombre_salaries', header: 'Effectif' },
     { accessorKey: 'statut', header: 'Statut', cell: i => {
       const s = i.getValue() as string
       return <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUT_COLORS[s] ?? ''}`}>{STATUT_LABELS[s] ?? s}</span>
@@ -104,12 +106,12 @@ export function ArtisansTable({ data, demoMode = false }: { data: Artisan[]; dem
   })
 
   async function lancerCollecte() {
-    if (!confirm('Lancer la collecte API État ? Cela peut prendre plusieurs minutes.')) return
+    if (!confirm('Lancer la collecte officielle des artisans du bâtiment du 65 ? Cela peut prendre plusieurs minutes.')) return
     setCollecteLoading(true)
     try {
       const res = await fetch('/api/collecte', { method: 'POST' })
       const json = await res.json()
-      if (json.success) alert(`Collecte terminée : ${json.count} artisans importés.`)
+      if (json.success) alert(`Collecte terminée : ${json.count} artisans 65 importés.`)
       else alert('Erreur : ' + json.error)
     } finally {
       setCollecteLoading(false)
@@ -130,7 +132,6 @@ export function ArtisansTable({ data, demoMode = false }: { data: Artisan[]; dem
           <SelectTrigger className="w-36"><SelectValue placeholder="Département" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="tous">Tous dép.</SelectItem>
-            <SelectItem value="64">64 — Pyr. Atl.</SelectItem>
             <SelectItem value="65">65 — Htes-Pyr.</SelectItem>
           </SelectContent>
         </Select>
@@ -157,14 +158,17 @@ export function ArtisansTable({ data, demoMode = false }: { data: Artisan[]; dem
           </SelectContent>
         </Select>
         <div className="ml-auto flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => exportCsv(table.getFilteredRowModel().rows.map(r => r.original))}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportCsv(table.getFilteredRowModel().rows.map(r => r.original))}
+            disabled={table.getFilteredRowModel().rows.length === 0}
+          >
             Exporter CSV
           </Button>
-          {!demoMode && (
-            <Button size="sm" className="bg-red-600 hover:bg-red-700" onClick={lancerCollecte} disabled={collecteLoading}>
-              {collecteLoading ? 'Collecte en cours…' : 'Lancer la collecte'}
-            </Button>
-          )}
+          <Button size="sm" className="bg-red-600 hover:bg-red-700" onClick={lancerCollecte} disabled={collecteLoading}>
+            {collecteLoading ? 'Collecte en cours…' : 'Collecter artisans 65'}
+          </Button>
         </div>
       </div>
 
@@ -207,7 +211,11 @@ export function ArtisansTable({ data, demoMode = false }: { data: Artisan[]; dem
               </tr>
             ))}
             {table.getRowModel().rows.length === 0 && (
-              <tr><td colSpan={columns.length} className="text-center py-16 text-gray-400">Aucun résultat</td></tr>
+              <tr>
+                <td colSpan={columns.length} className="text-center py-16 text-gray-400">
+                  Aucune donnée démo. Lancez la collecte officielle du 65, puis téléversez la liste adhérents pour identifier les non-adhérents.
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
@@ -216,7 +224,7 @@ export function ArtisansTable({ data, demoMode = false }: { data: Artisan[]; dem
       {/* Pagination */}
       <div className="flex items-center justify-between px-4 py-2 border-t bg-white text-sm">
         <span className="text-gray-500">
-          Page {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
+          Page {table.getPageCount() === 0 ? 0 : table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
         </span>
         <div className="flex gap-1">
           <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>Précédent</Button>
