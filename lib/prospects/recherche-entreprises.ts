@@ -226,7 +226,7 @@ function mapProspect(entreprise: ApiEntreprise, etablissement: ApiEtablissement)
 
   const priorite = scored.reasons.includes('Entreprise ou établissement récent')
     ? 'nouvelle'
-    : scored.score >= 70
+    : scored.score >= 65
       ? 'forte'
       : 'standard'
 
