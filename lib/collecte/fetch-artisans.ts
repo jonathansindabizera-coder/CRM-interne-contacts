@@ -1,4 +1,9 @@
 import { getCategorieMetier } from './categories-naf'
+import {
+  isCapebProspectEmployeeRange,
+  isTargetDepartment,
+  TARGET_DEPARTMENT,
+} from './prospect-targeting'
 import type { NewArtisan } from '@/lib/db/schema'
 
 const API_BASE = 'https://recherche-entreprises.api.gouv.fr/search'
@@ -62,7 +67,7 @@ export async function fetchAllArtisans(
   let total = 0
 
   do {
-    const url = `${API_BASE}?departement=64,65&section_activite_principale=F&etat_administratif=A&per_page=25&page=${page}`
+    const url = `${API_BASE}?departement=${TARGET_DEPARTMENT}&section_activite_principale=F&etat_administratif=A&per_page=25&page=${page}`
     const res = await fetch(url)
     if (!res.ok) throw new Error(`API erreur ${res.status} page ${page}`)
 
@@ -70,6 +75,8 @@ export async function fetchAllArtisans(
     total = data.total_results
 
     for (const e of data.results) {
+      if (!isTargetDepartment(e.departement)) continue
+      if (!isCapebProspectEmployeeRange(e.tranche_effectif_salarie)) continue
       artisans.push(mapEntrepriseToArtisan(e))
     }
 
