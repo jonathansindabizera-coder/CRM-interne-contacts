@@ -136,10 +136,3 @@ Données strictement à usage interne CAPEB. Beaucoup d'artisans sont en entrepr
 
 - 2026-06-09 : Initialisation du dépôt — CLAUDE.md ajouté, remote GitHub configuré.
 - 2026-06-09 : Étape 1 — Scaffold Next.js 15 + TypeScript + Tailwind + App Router installé.
-- 2026-06-17 : Phase 2 enrichissement — module `lib/enrichissement/` complet.
-  - Cascade en 7 étapes (Google Maps → Site web → Pages Jaunes → AlloVoisins → Annuaires → Societe.com → Leboncoin).
-  - `scripts/enrichir-contacts.ts` : CLI avec reprise d'état, export CSV progressif, batch Supabase.
-  - `app/api/enrichissement/route.ts` : enrichissement à la demande d'une fiche depuis l'UI.
-  - Migration `002_enrichissement.sql` : 3 nouveaux champs (`source_contact`, `niveau_confiance`, `enrichi_le`).
-  - Dépendances ajoutées : `cheerio`, `tsx`, `dotenv`.
-  - Règles Leboncoin respectées (1 tentative max, abandon immédiat si bloqué, seuil 3 blocages).

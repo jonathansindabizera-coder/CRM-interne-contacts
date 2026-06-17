@@ -39,10 +39,6 @@ export const artisans = pgTable('artisans', {
   date_dernier_contact: timestamp('date_dernier_contact', { withTimezone: true }),
   cree_le:             timestamp('cree_le', { withTimezone: true }).defaultNow(),
   nouveau_ce_mois:     boolean('nouveau_ce_mois').default(false),
-  // Enrichissement contacts
-  source_contact:      text('source_contact'),
-  niveau_confiance:    text('niveau_confiance'),
-  enrichi_le:          timestamp('enrichi_le', { withTimezone: true }),
 })
 
 export type Artisan = typeof artisans.$inferSelect
