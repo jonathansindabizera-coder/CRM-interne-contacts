@@ -73,6 +73,9 @@ export async function fetchDemoArtisans(pages = 4): Promise<{ artisans: Artisan[
         date_dernier_contact: null,
         cree_le:              new Date(),
         nouveau_ce_mois:      false,
+        source_contact:       null,
+        niveau_confiance:     null,
+        enrichi_le:           null,
       })
     }
   }
